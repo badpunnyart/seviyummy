@@ -88,7 +88,7 @@ async function loadGallery() {
     render();
     return;
   }
-  const { data, error } = await supabase.from('artworks').select('id, title, image_url, image_path, tags').eq('is_public', true).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('artworks').select('id, title, image_path, tags').eq('is_public', true).order('created_at', { ascending: false });
   if (error) {
     state.loading = false;
     state.error = 'The gallery could not load published artworks.';
@@ -99,7 +99,7 @@ async function loadGallery() {
     id: item.id,
     title: item.title,
     tags: Array.isArray(item.tags) ? item.tags : [],
-    image: item.image_url || (item.image_path ? supabase.storage.from('artworks').getPublicUrl(item.image_path).data.publicUrl : '')
+    image: item.image_path ? supabase.storage.from('artworks').getPublicUrl(item.image_path).data.publicUrl : ''
   })).filter((item) => item.title && item.image);
   state.loading = false;
   render();
