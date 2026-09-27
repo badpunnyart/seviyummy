@@ -6,7 +6,7 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const configured = Boolean(supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project'));
 const supabase = configured ? createClient(supabaseUrl, supabaseKey) : null;
 
-const state = { query: '', active: 'all', selected: new Map(), artwork: [], loading: true, error: '' };
+const state = { query: '', active: 'all', selected: new Map(), artwork: [], loading: true, error: '', requestId: 0, searchTimer: null, serverSearchQuery: null };
 const labelFor = (tag) => tag.split('-').map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
 
@@ -70,7 +70,7 @@ function render() {
   const query = state.query.toLowerCase();
   const shown = state.artwork.filter((item) => {
     const matchesFilter = state.active === 'all' || item.tags.includes(state.active);
-    const matchesQuery = !query || `${item.title} ${item.tags.join(' ')}`.toLowerCase().includes(query);
+    const matchesQuery = !query || state.serverSearchQuery === query || `${item.title} ${item.tags.join(' ')}`.toLowerCase().includes(query);
     return matchesFilter && matchesQuery;
   });
   count.textContent = `${shown.length} artworks`;
@@ -81,26 +81,48 @@ function render() {
   renderSelection();
 }
 
-async function loadGallery() {
+async function loadGallery(query = state.query) {
+  const requestId = ++state.requestId;
   if (!configured) {
     state.loading = false;
     state.error = 'The gallery is not connected to its production database yet.';
     render();
     return;
   }
-  const { data, error } = await supabase.from('artworks').select('id, title, image_path, tags').eq('is_public', true).order('created_at', { ascending: false });
+  state.loading = true;
+  state.error = '';
+  render();
+
+  const { data, error } = await supabase.rpc('search_public_artworks', { p_query: query });
+  if (requestId !== state.requestId) return;
+  let rows = data;
   if (error) {
-    state.loading = false;
-    state.error = 'The gallery could not load published artworks.';
-    render();
-    return;
+    // Keep visible-tag search working until the accompanying SQL migration is applied.
+    const fallback = await supabase.from('artworks').select('id, title, image_path, tags, created_at').eq('is_public', true).order('created_at', { ascending: false });
+    if (requestId !== state.requestId) return;
+    if (fallback.error) {
+      state.loading = false;
+      state.serverSearchQuery = null;
+      state.error = 'The gallery could not load published artworks.';
+      render();
+      return;
+    }
+    rows = fallback.data;
+    state.serverSearchQuery = null;
+  } else {
+    state.serverSearchQuery = query;
   }
-  state.artwork = (data || []).map((item) => ({
-    id: item.id,
-    title: item.title,
-    tags: Array.isArray(item.tags) ? item.tags : [],
-    image: item.image_path ? supabase.storage.from('artworks').getPublicUrl(item.image_path).data.publicUrl : ''
-  })).filter((item) => item.title && item.image);
+  if (!rows) {
+    state.loading = false;
+    state.artwork = [];
+  } else {
+    state.artwork = rows.map((item) => ({
+      id: item.id,
+      title: item.title,
+      tags: Array.isArray(item.tags) ? item.tags : [],
+      image: item.image_path ? supabase.storage.from('artworks').getPublicUrl(item.image_path).data.publicUrl : ''
+    })).filter((item) => item.title && item.image);
+  }
   state.loading = false;
   render();
 }
@@ -113,7 +135,12 @@ function toggle(card) {
 }
 
 gallery.addEventListener('click', (event) => { const card = event.target.closest('.card'); if (card) toggle(card); });
-search.addEventListener('input', () => { state.query = search.value.trim(); render(); });
+search.addEventListener('input', () => {
+  state.query = search.value.trim().toLowerCase();
+  clearTimeout(state.searchTimer);
+  state.requestId += 1;
+  state.searchTimer = setTimeout(() => loadGallery(state.query), 180);
+});
 document.querySelector('#clear').addEventListener('click', () => { state.selected.clear(); render(); });
 document.querySelector('#copy').addEventListener('click', async (event) => {
   const names = [...state.selected.values()].map((item) => item.title);

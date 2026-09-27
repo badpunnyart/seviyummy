@@ -20,9 +20,10 @@ Nunca uses `service_role` o una secret key en este frontend.
 ## Supabase Auth
 
 1. Ejecutá `supabase/schema.sql` desde el SQL Editor.
-2. En **Authentication > Users**, creá el usuario administrador. El frontend no ofrece registro público.
-3. En **Authentication > URL Configuration**, agregá la URL local y `https://seviyummy.art/` como Site URL/redirect permitido.
-4. La carpeta `artworks` se crea en Storage con políticas para que cada usuario autenticado solo pueda modificar sus propios archivos.
+2. Si `schema.sql` ya se había aplicado antes de habilitar la búsqueda por tags ocultos, ejecutá una sola vez `supabase/search-hidden-tags.sql` en el SQL Editor. No agregues el esquema `private` a los esquemas expuestos de la Data API.
+3. En **Authentication > Users**, creá el usuario administrador. El frontend no ofrece registro público.
+4. En **Authentication > URL Configuration**, agregá la URL local y `https://seviyummy.art/` como Site URL/redirect permitido.
+5. La carpeta `artworks` se crea en Storage con políticas para que cada usuario autenticado solo pueda modificar sus propios archivos.
 
 El admin está en `/admin.html` y permite subir, publicar/ocultar, editar nombre y tags, reemplazar la imagen y eliminar obras. Los tags internos no aparecen en la galería pública.
 
