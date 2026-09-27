@@ -11,20 +11,21 @@ const labelFor = (tag) => tag.split('-').map((part) => part[0]?.toUpperCase() + 
 const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
 
 document.querySelector('#app').innerHTML = `
-  <div class="gallery-shell">
-    <header class="gallery-header">
-      <div><span class="eyebrow">COLLECTION / SEVIYUMMY</span><h1>seviyummy <em>gallery</em></h1><p>Select the images you need, then click <strong>Copy names</strong> to share the exact list and quantity.</p></div>
-      <a class="studio-link" href="./admin.html">Open studio ↗</a>
-    </header>
-    <section class="tools" aria-label="Gallery controls">
-      <label class="search"><span>Search the gallery</span><input id="search" type="search" placeholder="Name or tag…" autocomplete="off" /></label>
-      <div class="filters" id="filters"></div>
-      <div class="results"><span id="count">Loading gallery…</span><span>select cards to build your list</span></div>
-      <div class="selection" id="selection" hidden><b><span id="selection-count">0</span> selected</b><div class="selected-list" id="selected-list"></div><button id="copy" type="button">Copy names</button><button id="clear" class="clear" type="button">Clear</button></div>
+  <main>
+    <section class="shell gallery-page" id="galeria">
+      <div class="section-head">
+        <div><span class="mono">collection</span><h2>seviyummy gallery</h2><p class="gallery-instruction">Select the images you need, then click <strong>Copy names</strong> to share the exact list and quantity.</p></div>
+        <span class="count" id="count">Loading gallery…</span>
+      </div>
+      <div class="gallery-sticky" id="gallery-sticky">
+        <div class="sticky-search"><div class="search-box"><label for="search">Search the gallery</label><input id="search" type="search" placeholder="Name or tag…" autocomplete="off" /></div></div>
+        <div class="filters" id="filters"></div>
+        <div id="selection" class="selection-bar" hidden><div class="selection-count"><b id="selection-count">0</b><span>selected</span></div><div id="selected-list" class="selection-names"></div><button id="copy" class="selection-copy" type="button">Copy names</button><button id="clear" class="selection-clear" type="button">Clear</button></div>
+      </div>
+      <div class="gallery" id="gallery" aria-label="Artwork gallery"></div>
     </section>
-    <section class="gallery" id="gallery" aria-label="Artwork gallery"></section>
-    <footer><span>seviyummy gallery</span><span>small universes, carefully kept</span></footer>
-  </div>
+  </main>
+  <footer class="pclaf-footer"><div class="pclaf-footer-inner"><div class="pclaf-footer-brand"><a class="pclaf-credit" href="https://www.pclaf.com.ar/" target="_blank" rel="noreferrer"><span>Site developed by</span><img src="https://www.pclaf.com.ar/assets/pclaf-logo.png" alt="PCLAF" /><b>PCLAF</b></a></div><span class="pclaf-footer-links"><a href="https://www.pclaf.com.ar/" target="_blank" rel="noreferrer">PCLAF website ↗</a><a href="https://wa.me/5491135708345" target="_blank" rel="noreferrer">WhatsApp ↗</a></span></div></footer>
 `;
 
 const gallery = document.querySelector('#gallery');
@@ -36,9 +37,13 @@ const selectionCount = document.querySelector('#selection-count');
 const selectedList = document.querySelector('#selected-list');
 
 function renderFilters() {
-  const tags = [...new Set(state.artwork.flatMap((item) => item.tags))].sort();
+  const preferredOrder = ['pokemon', 'anime', 'demo', 'digimon', 'chainsaw-man', 'action', 'cars', 'vehicles'];
+  const tags = [...new Set(state.artwork.flatMap((item) => item.tags))].sort((a, b) => {
+    const ai = preferredOrder.indexOf(a); const bi = preferredOrder.indexOf(b);
+    return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+  });
   filters.innerHTML = tags.length
-    ? [['all', 'All'], ...tags.map((tag) => [tag, labelFor(tag)])].map(([value, label]) => `<button class="filter${state.active === value ? ' active' : ''}" data-filter="${escapeHTML(value)}" type="button">${escapeHTML(label)}</button>`).join('')
+    ? [['all', 'All'], ...tags.map((tag) => [tag, tag === 'pokemon' ? 'Pokémon' : labelFor(tag)])].map(([value, label]) => `<button class="filter${state.active === value ? ' active' : ''}" data-filter="${escapeHTML(value)}" type="button">${escapeHTML(label)}</button>`).join('')
     : '';
   filters.querySelectorAll('.filter').forEach((button) => button.addEventListener('click', () => { state.active = button.dataset.filter; render(); }));
 }
@@ -71,7 +76,7 @@ function render() {
   count.textContent = `${shown.length} artworks`;
   gallery.innerHTML = shown.map((item) => {
     const key = item.id;
-    return `<article class="art-card${state.selected.has(key) ? ' selected' : ''}" data-key="${escapeHTML(key)}" tabindex="0" role="button" aria-pressed="${state.selected.has(key)}"><div class="art-image"><img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.title)}" loading="lazy" draggable="false" /><span class="watermark">SEVIYUMMY</span></div><div class="art-info"><strong>${escapeHTML(item.title)}</strong><div>${item.tags.map((tag) => `<span>#${escapeHTML(tag)}</span>`).join('')}</div></div></article>`;
+    return `<button class="card${state.selected.has(key) ? ' is-selected' : ''}" data-key="${escapeHTML(key)}" type="button" aria-pressed="${state.selected.has(key)}"><div class="art"><img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.title)}" loading="lazy" draggable="false" /><span class="watermark">SEVIYUMMY</span><div class="card-info"><strong class="card-title">${escapeHTML(item.title)}</strong><div class="tags">${item.tags.map((tag) => `<span class="tag">#${escapeHTML(tag)}</span>`).join('')}</div></div></div></button>`;
   }).join('') || `<p class="empty">${state.artwork.length ? 'No artworks found. Try another search.' : 'No published artworks yet.'}</p>`;
   renderSelection();
 }
@@ -107,8 +112,7 @@ function toggle(card) {
   render();
 }
 
-gallery.addEventListener('click', (event) => { const card = event.target.closest('.art-card'); if (card) toggle(card); });
-gallery.addEventListener('keydown', (event) => { const card = event.target.closest('.art-card'); if (card && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); toggle(card); } });
+gallery.addEventListener('click', (event) => { const card = event.target.closest('.card'); if (card) toggle(card); });
 search.addEventListener('input', () => { state.query = search.value.trim(); render(); });
 document.querySelector('#clear').addEventListener('click', () => { state.selected.clear(); render(); });
 document.querySelector('#copy').addEventListener('click', async (event) => {
