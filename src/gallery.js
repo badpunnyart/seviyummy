@@ -144,7 +144,7 @@ search.addEventListener('input', () => {
 document.querySelector('#clear').addEventListener('click', () => { state.selected.clear(); render(); });
 document.querySelector('#copy').addEventListener('click', async (event) => {
   const names = [...state.selected.values()].map((item) => item.title);
-  await navigator.clipboard?.writeText(`${names.length} images:\n${names.join('\n')}`);
+  await navigator.clipboard?.writeText(`${names.length} images:\n${names.join(',')}`);
   event.currentTarget.textContent = 'Copied ✓';
   setTimeout(() => { event.currentTarget.textContent = 'Copy names'; }, 1600);
 });
