@@ -6,7 +6,7 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const configured = Boolean(supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project'));
 const supabase = configured ? createClient(supabaseUrl, supabaseKey) : null;
 
-const state = { query: '', active: 'all', selected: new Map(), artwork: [], loading: true, error: '', requestId: 0, searchTimer: null, serverSearchQuery: null };
+const state = { query: '', active: 'all', selected: new Map(), artwork: [], loading: true, error: '', requestId: 0, searchTimer: null, serverSearchQuery: null, oldestFirst: false };
 const labelFor = (tag) => tag.split('-').map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
 
@@ -15,7 +15,7 @@ document.querySelector('#app').innerHTML = `
     <section class="shell gallery-page" id="galeria">
       <div class="section-head">
         <div><span class="mono">collection</span><h2>seviyummy gallery</h2><p class="gallery-instruction">Select the images you need, then click <strong>Copy names</strong> to share the exact list and quantity.</p></div>
-        <span class="count" id="count">Loading gallery…</span>
+        <div class="gallery-meta"><span class="count" id="count">Loading gallery…</span><button class="sort-toggle" id="sort-toggle" type="button" aria-label="Show oldest artworks first" aria-pressed="false">Newest first ↓</button></div>
       </div>
       <div class="gallery-sticky" id="gallery-sticky">
         <div class="sticky-search"><div class="search-box"><label for="search">Search the gallery</label><input id="search" type="search" placeholder="Name or tag…" autocomplete="off" /></div></div>
@@ -32,6 +32,7 @@ const gallery = document.querySelector('#gallery');
 const filters = document.querySelector('#filters');
 const search = document.querySelector('#search');
 const count = document.querySelector('#count');
+const sortToggle = document.querySelector('#sort-toggle');
 const selection = document.querySelector('#selection');
 const selectionCount = document.querySelector('#selection-count');
 const selectedList = document.querySelector('#selected-list');
@@ -56,6 +57,9 @@ function renderSelection() {
 
 function render() {
   renderFilters();
+  sortToggle.textContent = state.oldestFirst ? 'Oldest first ↑' : 'Newest first ↓';
+  sortToggle.setAttribute('aria-pressed', String(state.oldestFirst));
+  sortToggle.setAttribute('aria-label', state.oldestFirst ? 'Sorted oldest first. Click for newest first' : 'Sorted newest first. Click for oldest first');
   if (state.loading) {
     count.textContent = 'Loading gallery…';
     gallery.innerHTML = '<p class="empty">Loading published artworks…</p>';
@@ -68,7 +72,8 @@ function render() {
     return;
   }
   const query = state.query.toLowerCase();
-  const shown = state.artwork.filter((item) => {
+  const orderedArtwork = state.oldestFirst ? [...state.artwork].reverse() : state.artwork;
+  const shown = orderedArtwork.filter((item) => {
     const matchesFilter = state.active === 'all' || item.tags.includes(state.active);
     const matchesQuery = !query || state.serverSearchQuery === query || `${item.title} ${item.tags.join(' ')}`.toLowerCase().includes(query);
     return matchesFilter && matchesQuery;
@@ -135,6 +140,7 @@ function toggle(card) {
 }
 
 gallery.addEventListener('click', (event) => { const card = event.target.closest('.card'); if (card) toggle(card); });
+sortToggle.addEventListener('click', () => { state.oldestFirst = !state.oldestFirst; render(); });
 search.addEventListener('input', () => {
   state.query = search.value.trim().toLowerCase();
   clearTimeout(state.searchTimer);
