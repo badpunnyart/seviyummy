@@ -5,6 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const configured = Boolean(supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project'));
 const supabase = configured ? createClient(supabaseUrl, supabaseKey) : null;
+const localMode = Boolean(import.meta.env.DEV && import.meta.env.VITE_LOCAL_USER && import.meta.env.VITE_LOCAL_PASSWORD);
 const state = { user: null, works: [], query: '', editing: null, selectedFile: null, loading: false };
 const app = document.querySelector('#app');
 const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
@@ -17,15 +18,15 @@ const shell = (content) => `<div class="grain" aria-hidden="true"></div><section
 function loginView(message = '') {
   app.innerHTML = shell(`
     <header class="shell topbar"><a class="brand" href="./"><span class="brand-mark">✦</span> seviyummy</a><a class="back" href="./">← back to gallery</a></header>
-    <section class="login-screen"><form id="login-form" class="login-card"><span class="eyebrow">studio / private access</span><h1>Hello, artist.</h1><p>Sign in to upload new artwork to the gallery.</p><label for="email">Email</label><input id="email" type="email" autocomplete="username" required placeholder="artist@example.com" /><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Your password" />${message ? `<div class="login-error" role="status">${escapeHTML(message)}</div>` : ''}<button class="login-button primary" type="submit">Enter studio ↗</button><button class="text-button reset-button" id="reset" type="button">Forgot password?</button>${!configured ? '<p class="setup-note">Supabase is not connected. Add the production URL and publishable key as environment variables before signing in.</p>' : ''}</form></section>`);
+    <section class="login-screen"><form id="login-form" class="login-card"><span class="eyebrow">studio / private access</span><h1>Hello, artist.</h1><p>${localMode ? 'Local development access.' : 'Sign in to upload new artwork to the gallery.'}</p><label for="email">${localMode ? 'User' : 'Email'}</label><input id="email" type="${localMode ? 'text' : 'email'}" autocomplete="username" required placeholder="${localMode ? 'Local user' : 'artist@example.com'}" /><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Your password" />${message ? `<div class="login-error" role="status">${escapeHTML(message)}</div>` : ''}<button class="login-button primary" type="submit">Enter studio ↗</button>${localMode ? '' : '<button class="text-button reset-button" id="reset" type="button">Forgot password?</button>'}${!configured && !localMode ? '<p class="setup-note">Supabase is not connected. Add the production URL and publishable key as environment variables before signing in.</p>' : ''}</form></section>`);
   document.querySelector('#login-form').addEventListener('submit', signIn);
-  document.querySelector('#reset').addEventListener('click', resetPassword);
+  document.querySelector('#reset')?.addEventListener('click', resetPassword);
 }
 
 function studioView() {
   app.innerHTML = shell(`
     <header class="shell topbar"><a class="brand" href="./"><span class="brand-mark">✦</span> seviyummy</a><div class="admin-actions"><a class="back" href="./">← back to gallery</a><button class="logout" id="logout" type="button">Sign out</button></div></header>
-    <main id="admin-main" class="shell admin"><section class="intro"><span class="eyebrow">studio / artwork upload</span><h1>Add a new little drawing.</h1><p>Upload the image, organize its tags and publish it to the gallery.</p></section><section class="panel"><div class="section-label">${state.editing ? 'EDIT ARTWORK' : 'NEW ARTWORK'} <span>${state.editing ? '02 / 02' : '01 / 02'}</span></div><form id="artwork-form"><label class="drop" id="dropzone"><input id="file" type="file" accept="image/png,image/jpeg,image/webp" /><span id="drop-copy">${state.editing ? 'Choose a replacement image or keep the current one' : 'Drop an image here or choose a file'}<small>PNG, JPG or WEBP · recommended maximum 5 MB</small></span><img id="preview" class="preview" alt="Artwork preview" hidden /></label><div class="field"><label for="title">Artwork name</label><input id="title" required placeholder="e.g. Pikachu witch" /></div><div class="field"><label for="tags">Visible tags</label><input id="tags" placeholder="pokemon, halloween" /></div><div class="field"><label for="hidden-tags">Internal tags</label><input id="hidden-tags" placeholder="client, seasonal, commission" /><small class="tag-hint">Not shown publicly; useful for internal search.</small></div><label class="check-row"><input id="is-public" type="checkbox" checked /> Publish to the public gallery</label><div class="form-actions"><button class="submit primary" type="submit">${state.editing ? 'Save changes ↗' : 'Publish artwork ↗'}</button>${state.editing ? '<button class="secondary" id="cancel-edit" type="button">Cancel</button>' : ''}</div></form><p id="form-message" class="form-message" role="status"></p><div class="works-section"><div class="works-tools"><h2 class="side-title">Your artworks <span id="total">0</span></h2><input id="works-search" class="works-search" type="search" placeholder="Search by name or tag…" autocomplete="off" /></div><div id="recent-tags" class="recent-tags"></div><div id="works" class="works-grid"></div></div></section></main>`);
+    <main id="admin-main" class="shell admin"><section class="panel upload-panel"><div class="section-label">${state.editing ? 'EDIT ARTWORK' : 'NEW ARTWORK'} <span>${state.editing ? '02 / 02' : '01 / 02'}</span></div><form id="artwork-form"><label class="drop" id="dropzone"><input id="file" type="file" accept="image/png,image/jpeg,image/webp" /><span id="drop-copy">${state.editing ? 'Choose a replacement image or keep the current one' : 'Drop an image here or choose a file'}<small>PNG, JPG or WEBP · recommended maximum 5 MB</small></span><img id="preview" class="preview" alt="Artwork preview" hidden /></label><div class="field"><label for="title">Artwork name</label><input id="title" required placeholder="e.g. Pikachu witch" /></div><div class="field"><label for="tags">Visible tags</label><input id="tags" placeholder="pokemon, halloween" /></div><div class="field"><label for="hidden-tags">Internal tags</label><input id="hidden-tags" placeholder="client, seasonal, commission" /><small class="tag-hint">Not shown publicly; useful for internal search.</small></div><label class="check-row"><input id="is-public" type="checkbox" checked /> Publish to the public gallery</label><div class="form-actions"><button class="submit primary" type="submit">${state.editing ? 'Save changes ↗' : 'Publish artwork ↗'}</button>${state.editing ? '<button class="secondary" id="cancel-edit" type="button">Cancel</button>' : ''}</div></form><p id="form-message" class="form-message" role="status"></p></section><section class="panel works-section"><div class="works-tools"><h2 class="side-title">Your artworks <span id="total">0</span></h2><input id="works-search" class="works-search" type="search" placeholder="Search by name or tag…" autocomplete="off" /></div><div id="recent-tags" class="recent-tags"></div><div id="works" class="works-grid"></div></section></main>`);
   document.querySelector('#logout').addEventListener('click', signOut);
   document.querySelector('#artwork-form').addEventListener('submit', saveArtwork);
   document.querySelector('#file').addEventListener('change', handleFile);
@@ -46,11 +47,15 @@ function renderFormValues() {
 
 async function signIn(event) {
   event.preventDefault();
+  const username = document.querySelector('#email').value.trim();
+  const password = document.querySelector('#password').value;
+  if (localMode) {
+    if (username !== import.meta.env.VITE_LOCAL_USER || password !== import.meta.env.VITE_LOCAL_PASSWORD) return loginView('Invalid local credentials.');
+    state.user = { id: 'local-dev-user', email: username }; return studioView();
+  }
   if (!configured) return loginView('Connect Supabase before trying to sign in.');
   const button = event.currentTarget.querySelector('button'); button.disabled = true; button.textContent = 'Checking…';
-  const email = document.querySelector('#email').value.trim();
-  const password = document.querySelector('#password').value;
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
   if (error) return loginView(error.message);
   state.user = data.user; studioView();
 }
@@ -63,7 +68,7 @@ async function resetPassword() {
   loginView(error ? error.message : 'Password reset instructions sent.');
 }
 
-async function signOut() { await supabase?.auth.signOut(); state.user = null; state.works = []; loginView(); }
+async function signOut() { if (!localMode) await supabase?.auth.signOut(); state.user = null; state.works = []; loginView(); }
 
 function handleFile(event) {
   state.selectedFile = event.target.files[0] || null;
@@ -74,7 +79,7 @@ function handleFile(event) {
 async function saveArtwork(event) {
   event.preventDefault();
   const form = event.currentTarget; const button = form.querySelector('button[type="submit"]'); const message = document.querySelector('#form-message');
-  if (!state.user || !configured) return;
+  if (!state.user || !configured || localMode) { if (localMode) message.textContent = 'Local preview mode: uploads are disabled.'; return; }
   const title = document.querySelector('#title').value.trim(); const tags = normalizeTags(document.querySelector('#tags').value); const hiddenTags = normalizeTags(document.querySelector('#hidden-tags').value); const isPublic = document.querySelector('#is-public').checked;
   button.disabled = true; button.textContent = state.editing ? 'Saving…' : 'Uploading…'; message.textContent = '';
   try {
@@ -99,7 +104,7 @@ async function saveArtwork(event) {
 }
 
 async function loadWorks() {
-  if (!supabase || !state.user) return;
+  if (!supabase || !state.user || localMode) return;
   const { data, error } = await supabase.from('artworks').select('id, title, image_path, tags, hidden_tags, is_public, created_at').eq('owner_id', state.user.id).order('created_at', { ascending: false });
   if (error) { document.querySelector('#works').innerHTML = `<p class="form-message">${escapeHTML(error.message)}</p>`; return; }
   state.works = (data || []).map((item) => ({ ...item, image_url: supabase.storage.from('artworks').getPublicUrl(item.image_path).data.publicUrl }));
@@ -126,4 +131,4 @@ async function deleteArtwork(id) {
 }
 
 loginView();
-if (supabase) supabase.auth.getSession().then(({ data }) => { if (data.session) { state.user = data.session.user; studioView(); } });
+if (supabase && !localMode) supabase.auth.getSession().then(({ data }) => { if (data.session) { state.user = data.session.user; studioView(); } });

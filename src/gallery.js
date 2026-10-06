@@ -81,7 +81,7 @@ function render() {
   count.textContent = `${shown.length} artworks`;
   gallery.innerHTML = shown.map((item) => {
     const key = item.id;
-    return `<button class="card${state.selected.has(key) ? ' is-selected' : ''}" data-key="${escapeHTML(key)}" type="button" aria-pressed="${state.selected.has(key)}"><div class="art"><img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.title)}" loading="lazy" draggable="false" /><div class="card-info"><strong class="card-title">${escapeHTML(item.title)}</strong><div class="tags">${item.tags.map((tag) => `<span class="tag">#${escapeHTML(tag)}</span>`).join('')}</div></div></div></button>`;
+    return `<button class="card${state.selected.has(key) ? ' is-selected' : ''}" data-key="${escapeHTML(key)}" type="button" aria-pressed="${state.selected.has(key)}"><div class="art"><img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.title)}" loading="lazy" draggable="false" /><div class="card-info"><strong class="card-title">${escapeHTML(item.title)}</strong></div></div></button>`;
   }).join('') || `<p class="empty">${state.artwork.length ? 'No artworks found. Try another search.' : 'No published artworks yet.'}</p>`;
   renderSelection();
 }

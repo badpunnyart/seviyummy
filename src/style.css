@@ -3,4 +3,6 @@
 @media(max-width:800px){.shell{padding:0 18px}.admin{display:block;padding-top:48px}.admin .intro{margin-bottom:38px}.works-tools{display:block}.works-search{width:100%;margin-top:12px}.works-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar .back{font-size:12px}.logout{padding:8px 11px;font-size:12px}}
 @media(max-width:440px){.works-grid{grid-template-columns:1fr}.login-card{padding:24px}.topbar{height:72px}.admin-actions{gap:8px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+.admin{grid-template-columns:1fr;gap:34px}.admin .upload-panel{width:100%}.admin .works-section{margin-top:0}
+@media(max-width:800px){.admin{display:grid;grid-template-columns:1fr;gap:24px;padding-top:48px}.admin .upload-panel,.admin .works-section{width:100%}}
  .login-card .primary{background:var(--acid)}
