@@ -18,7 +18,7 @@ document.querySelector('#app').innerHTML = `
         <div class="gallery-meta"><span class="count" id="count">Loading gallery…</span><button class="sort-toggle" id="sort-toggle" type="button" aria-label="Show oldest artworks first" aria-pressed="false">Newest first ↓</button></div>
       </div>
       <div class="gallery-sticky" id="gallery-sticky">
-        <div class="sticky-search"><div class="search-box"><label for="search">Search the gallery</label><input id="search" type="search" placeholder="Name or tag…" autocomplete="off" /></div></div>
+        <div class="sticky-search"><div class="search-box"><label for="search">Search the gallery</label><input id="search" type="search" placeholder="Type here to search by pokemon name, type, color, region, anime character, etc" autocomplete="off" /></div></div>
         <div class="filters" id="filters"></div>
         <div id="selection" class="selection-bar" hidden><div class="selection-count"><b id="selection-count">0</b><span>selected</span></div><div id="selected-list" class="selection-names"></div><button id="copy" class="selection-copy" type="button">Copy names</button><button id="clear" class="selection-clear" type="button">Clear</button></div>
       </div>
