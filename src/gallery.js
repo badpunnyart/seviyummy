@@ -52,7 +52,7 @@ function renderFilters() {
 function renderSelection() {
   selection.hidden = state.selected.size === 0;
   selectionCount.textContent = state.selected.size;
-  selectedList.innerHTML = [...state.selected.values()].map((item) => `<span class="selected-item"><strong>${escapeHTML(item.title)}</strong><small>${item.tags.map((tag) => `#${escapeHTML(tag)}`).join(' ')}</small></span>`).join('');
+  selectedList.innerHTML = [...state.selected.values()].map((item) => `<span class="selected-item"><strong>${escapeHTML(item.title)}</strong></span>`).join('');
 }
 
 function render() {
