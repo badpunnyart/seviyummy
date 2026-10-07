@@ -5,4 +5,8 @@
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
 .admin{grid-template-columns:1fr;gap:34px}.admin .upload-panel{width:100%}.admin .works-section{margin-top:0}
 @media(max-width:800px){.admin{display:grid;grid-template-columns:1fr;gap:24px;padding-top:48px}.admin .upload-panel,.admin .works-section{width:100%}}
+.local-preview-mode .work-actions{display:none}
+.admin .works-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:800px){.admin .works-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:440px){.admin .works-grid{grid-template-columns:1fr}}
  .login-card .primary{background:var(--acid)}
